@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"regexp"
+	"sort"
 	"time"
 )
 
@@ -17,6 +18,8 @@ var (
 	knownPositions  = flag.String("known-positions", "_____", "A string with the correct letters in their correct positions. Using '_' for unknown positions")
 	knownLetters    = flag.String("known-letters", "", "A string of letters known to be in the word, but their position is unknown (order doesn't matter)")
 	knownNonLetters = flag.String("known-nonletters", "", "A string of letters known to NOT be in the word")
+
+	letterWeights = make(map[rune]int)
 )
 
 func init() {
@@ -49,12 +52,12 @@ func readLines(path string) ([]string, error) {
 		return nil, err
 	}
 	defer file.Close()
-	var lines []string
+	var words []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+		words = append(words, scanner.Text())
 	}
-	return lines, scanner.Err()
+	return words, scanner.Err()
 }
 
 func main() {
@@ -62,6 +65,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to read word list: '%s': ", err)
 	}
+
+	for _, word := range wordList {
+		for _, c := range word {
+			letterWeights[c]++
+		}
+	}
+	//log.Printf("Weights: %+v", letterWeights)
 
 	if *knownPositions == "_____" && *knownLetters == "" && *knownNonLetters == "" {
 		printBestGuess(wordList)
@@ -134,9 +144,12 @@ func main() {
 	printBestGuess(wordList)
 }
 
-func printBestGuess(wordList []string) {
-	log.Printf("There are %d remaining words in the word list", len(wordList))
+type weightedWord struct {
+	word   string
+	weight int
+}
 
+func printBestGuess(wordList []string) {
 	// Find words without duplicate letters, to get more letter coverage on the guess
 	var reducedWordList []string
 	for _, word := range wordList {
@@ -161,13 +174,27 @@ func printBestGuess(wordList []string) {
 	}
 
 	if len(reducedWordList) < 10 {
-		log.Printf("This is all that's left: %+v", wordList)
-	}
+		log.Printf("These are all the remaining words: %+v", wordList)
+	} else {
+		log.Printf("There are %d remaining words", len(wordList))
 
-	if len(reducedWordList) != 0 {
-		log.Printf("Here are a couple of good next guesses: %s %s %s",
-			reducedWordList[rand.Intn(len(reducedWordList))],
-			reducedWordList[rand.Intn(len(reducedWordList))],
-			reducedWordList[rand.Intn(len(reducedWordList))])
+		// Assign a weight per-word
+		var wordWeights []weightedWord
+		for _, word := range reducedWordList {
+			var weight int
+			for _, c := range word {
+				weight += letterWeights[c]
+			}
+			wordWeights = append(wordWeights, weightedWord{word: word, weight: weight})
+		}
+		sort.Slice(wordWeights, func(i, j int) bool {
+			return wordWeights[i].weight > wordWeights[j].weight
+		})
+
+		var guesses = ""
+		for i := 1; i <= 10; i++ {
+			guesses = guesses + wordWeights[i].word + " "
+		}
+		log.Printf("Some good next guesses: %s", guesses)
 	}
 }
