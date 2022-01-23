@@ -1,9 +1,11 @@
 # Wordle-Solver
 Wordle-Solver
 
-Word list was generate by:
+Word lists generate by:
 ```
-curl -q https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt | grep -E '^.{6}$' > ./word-list.txt
+curl -q https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt | grep -E '^.{6}$' > ./word-listi-ALL.txt
+
+aspell -d en-wo_accents dump master | aspell -l en expand | tr '[:upper:]' '[:lower:]' | grep -E '^[a-z]{5}$' | sort > ./word-list.txt
 ```
 
 ## Usage
