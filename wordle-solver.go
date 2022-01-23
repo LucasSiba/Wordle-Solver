@@ -162,7 +162,9 @@ func printBestGuess(wordList []string) {
 
 	if len(reducedWordList) < 10 {
 		log.Printf("This is all that's left: %+v", wordList)
-	} else {
+	}
+
+	if len(reducedWordList) != 0 {
 		log.Printf("Here are a couple of good next guesses: %s %s %s",
 			reducedWordList[rand.Intn(len(reducedWordList))],
 			reducedWordList[rand.Intn(len(reducedWordList))],
